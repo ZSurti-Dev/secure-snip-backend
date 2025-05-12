@@ -6,7 +6,11 @@ const bcrypt = require('bcrypt');
 const cors = require('cors');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:5173', 'https://secure-snip-1a8tovm6l-zsurti-devs-projects.vercel.app'],
+  methods: ['GET', 'POST', 'DELETE'],
+  allowedHeaders: ['Content-Type'],
+}));
 app.use(express.json());
 
 // Use environment variables with fallbacks for local testing
