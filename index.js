@@ -6,13 +6,19 @@ const bcrypt = require('bcrypt');
 const cors = require('cors');
 
 const app = express();
+
+const allowedOrigins = [
+  'https://secure-snip-mj0v066pj-zsurti-devs-projects.vercel.app/', 
+  'http://localhost:5173'
+]; 
 app.use(cors({
-  origin: [ 'http://localhost:5173',
-            'https://secure-snip-aadidya05-zsurti-devs-projects-99463xfdf0xm788nptbq3wtn6e.vercel.app',
-            'https://secure-snip-bv1uhc1dt-zsurti-devs-projects.vercel.app',
-            'https://secure-snip-mj0v066pj-zsurti-devs-projects.vercel.app/'],
-  methods: ['GET', 'POST', 'DELETE'],
-  allowedHeaders: ['Content-Type'],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
 }));
 app.use(express.json());
 
