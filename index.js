@@ -7,7 +7,7 @@ const cors = require('cors');
 
 const app = express();
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://secure-snip-1a8tovm6l-zsurti-devs-projects.vercel.app'],
+  origin: ['http://localhost:5173', 'https://secure-snip-aadidya05-zsurti-devs-projects-99463xfdf0xm788nptbq3wtn6e.vercel.app'],
   methods: ['GET', 'POST', 'DELETE'],
   allowedHeaders: ['Content-Type'],
 }));
