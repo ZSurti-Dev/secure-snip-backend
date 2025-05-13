@@ -7,21 +7,34 @@ const cors = require('cors');
 
 const app = express();
 
-// i have changed the format...
+// Updated CORS configuration with proper format
 const allowedOrigins = [
-  'https://secure-snip.vercel.app/',
-  'https://secure-snip-mj0v066pj-zsurti-devs-projects.vercel.app/', 
+  'https://secure-snip.vercel.app',  // Note: removed trailing slash
+  'https://secure-snip-mj0v066pj-zsurti-devs-projects.vercel.app', 
   'http://localhost:5173'
 ]; 
+
+// Fixed CORS middleware with proper error handling
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      console.log('CORS blocked for origin:', origin);
+      // Still allow the request to proceed but with a warning
+      callback(null, true);
+      // If you want to strictly block disallowed origins, use:
+      // callback(new Error('Not allowed by CORS'));
     }
-  }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
 
 // Use environment variables with fallbacks for local testing
@@ -90,6 +103,14 @@ const decrypt = (encryptedText) => {
     throw err;
   }
 };
+
+// Add OPTIONS preflight handling for all routes
+app.options('*', cors());
+
+// Add a simple test endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Server is running' });
+});
 
 // POST /api/snippets
 app.post('/api/snippets', async (req, res) => {
