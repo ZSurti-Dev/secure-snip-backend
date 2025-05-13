@@ -10,7 +10,7 @@ app.use(cors({
   origin: [ 'http://localhost:5173',
             'https://secure-snip-aadidya05-zsurti-devs-projects-99463xfdf0xm788nptbq3wtn6e.vercel.app',
             'https://secure-snip-bv1uhc1dt-zsurti-devs-projects.vercel.app',
-            'secure-snip-mj0v066pj-zsurti-devs-projects.vercel.app'],
+            'https://secure-snip-mj0v066pj-zsurti-devs-projects.vercel.app/'],
   methods: ['GET', 'POST', 'DELETE'],
   allowedHeaders: ['Content-Type'],
 }));
