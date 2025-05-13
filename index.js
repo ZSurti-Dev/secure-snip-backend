@@ -7,6 +7,7 @@ const cors = require('cors');
 
 const app = express();
 
+// i have changed the format of allowedOrigins ere.
 const allowedOrigins = [
   'https://secure-snip-mj0v066pj-zsurti-devs-projects.vercel.app/', 
   'http://localhost:5173'
