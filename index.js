@@ -125,7 +125,7 @@ app.post('/api/snippets', async (req, res) => {
 app.post('/api/decrypt', async (req, res) => {
   const { id, password } = req.body;
   try {
-    const snippet = await Snippet.findById(id); // Query by _id
+    const snippet = await Snippet.findById(id);
     if (!snippet) {
       return res.status(404).json({ success: false, error: 'Snippet not found' });
     }
@@ -137,6 +137,16 @@ app.post('/api/decrypt', async (req, res) => {
     res.json({ success: true, message: decrypted });
   } catch (err) {
     res.status(400).json({ success: false, error: 'Decryption failed: ' + err.message });
+  }
+});
+
+app.get('/api/snippets', async (req, res) => {
+  try {
+    const snippets = await Snippet.find();
+    res.status(200).json(snippets);
+  } catch (err) {
+    console.error('Error fetching snippets:', err.message, err.stack);
+    res.status(500).json({ message: 'Failed to fetch snippets: ' + err.message });
   }
 });
 
@@ -157,7 +167,7 @@ app.get('/api/snippets/:id', async (req, res) => {
 app.delete('/api/snippets/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const deletedSnippet = await Snippet.findByIdAndDelete(id); // Query by _id
+    const deletedSnippet = await Snippet.findByIdAndDelete(id);
     if (!deletedSnippet) {
       return res.status(404).json({ message: 'Snippet not found' });
     }
