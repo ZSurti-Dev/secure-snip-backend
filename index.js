@@ -7,25 +7,19 @@ const cors = require('cors');
 
 const app = express();
 
-// Updated CORS configuration with proper format
 const allowedOrigins = [
-  'https://secure-snip.vercel.app',  // Note: removed trailing slash
-  'https://secure-snip-mj0v066pj-zsurti-devs-projects.vercel.app', 
+  'https://secure-snip.vercel.app',
+  'https://secure-snip-mj0v066pj-zsurti-devs-projects.vercel.app',
   'http://localhost:5173'
-]; 
+];
 
-// Fixed CORS middleware with proper error handling
 app.use(cors({
   origin: function(origin, callback) {
-    // For testing/development - allow requests with no origin 
     if (!origin) return callback(null, true);
-    
     if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
       callback(null, true);
     } else {
       console.log('CORS blocked for origin:', origin);
-      // Important: Even if not explicitly allowed, let the request through
-      // This helps debug while still logging the CORS issue
       callback(null, true);
     }
   },
@@ -36,11 +30,9 @@ app.use(cors({
 
 app.use(express.json());
 
-// Use environment variables with fallbacks for local testing
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/secure-snip';
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || '12345678901234567890123456789012'; // 32-character default key
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || '12345678901234567890123456789012';
 
-// MongoDB Connection
 const connectToMongoDB = async () => {
   try {
     await mongoose.connect(MONGO_URI, {
@@ -56,7 +48,6 @@ const connectToMongoDB = async () => {
   }
 };
 
-// Snippet Schema
 const snippetSchema = new mongoose.Schema({
   title: { type: String, required: true },
   encryptedData: { type: String, required: true },
@@ -67,7 +58,6 @@ const snippetSchema = new mongoose.Schema({
 
 const Snippet = mongoose.model('Snippet', snippetSchema);
 
-// AES-256 Encryption
 const encrypt = (text) => {
   try {
     if (!text || typeof text !== 'string') {
@@ -85,7 +75,6 @@ const encrypt = (text) => {
   }
 };
 
-// AES-256 Decryption
 const decrypt = (encryptedText) => {
   try {
     if (!encryptedText || typeof encryptedText !== 'string') {
@@ -103,15 +92,12 @@ const decrypt = (encryptedText) => {
   }
 };
 
-// Add OPTIONS preflight handling for all routes
 app.options('*', cors());
 
-// Add a simple test endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
-// POST /api/snippets
 app.post('/api/snippets', async (req, res) => {
   const { title, message, password, tags } = req.body;
   console.log('Received request to /api/snippets:', { title, message, password, tags });
@@ -124,7 +110,7 @@ app.post('/api/snippets', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const encryptedData = encrypt(message);
     const snippet = new Snippet({ title, encryptedData, password: hashedPassword, tags });
-    const savedSnippet = await snippet.save(); // Ensure save is awaited
+    const savedSnippet = await snippet.save();
     
     res.status(201).json({ success: true, encryptedData, title, id: savedSnippet._id });
   } catch (err) {
@@ -136,11 +122,10 @@ app.post('/api/snippets', async (req, res) => {
   }
 });
 
-// POST /api/decrypt
 app.post('/api/decrypt', async (req, res) => {
   const { id, password } = req.body;
   try {
-    const snippet = await Snippet.findOne({ snippetId: id }); // Query by snippetId
+    const snippet = await Snippet.findById(id); // Query by _id
     if (!snippet) {
       return res.status(404).json({ success: false, error: 'Snippet not found' });
     }
@@ -155,35 +140,6 @@ app.post('/api/decrypt', async (req, res) => {
   }
 });
 
-// GET /api/snippets
-app.get('/api/snippets/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const snippet = await Snippet.findOne({ snippetId: id }); // Query by snippetId
-    if (!snippet) {
-      return res.status(404).json({ message: 'Snippet not found' });
-    }
-    res.status(200).json({ encryptedData: snippet.encryptedData, title: snippet.title, createdAt: snippet.createdAt });
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch snippet: ' + err.message });
-  }
-});
-
-// DELETE /api/snippets/:id
-app.delete('/api/snippets/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deletedSnippet = await Snippet.findOneAndDelete({ snippetId: id }); // Query by snippetId
-    if (!deletedSnippet) {
-      return res.status(404).json({ message: 'Snippet not found' });
-    }
-    res.status(200).json({ success: true, message: 'Snippet deleted successfully' });
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to delete snippet: ' + err.message });
-  }
-});
-
-// GET /api/snippets/:id
 app.get('/api/snippets/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -198,7 +154,19 @@ app.get('/api/snippets/:id', async (req, res) => {
   }
 });
 
-// Start server
+app.delete('/api/snippets/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedSnippet = await Snippet.findByIdAndDelete(id); // Query by _id
+    if (!deletedSnippet) {
+      return res.status(404).json({ message: 'Snippet not found' });
+    }
+    res.status(200).json({ success: true, message: 'Snippet deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to delete snippet: ' + err.message });
+  }
+});
+
 const port = process.env.PORT || 5000;
 connectToMongoDB().then(() => {
   app.listen(port, () => console.log(`Server running on port ${port}`));
