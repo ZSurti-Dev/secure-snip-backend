@@ -17,17 +17,16 @@ const allowedOrigins = [
 // Fixed CORS middleware with proper error handling
 app.use(cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // For testing/development - allow requests with no origin 
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
       callback(null, true);
     } else {
       console.log('CORS blocked for origin:', origin);
-      // Still allow the request to proceed but with a warning
+      // Important: Even if not explicitly allowed, let the request through
+      // This helps debug while still logging the CORS issue
       callback(null, true);
-      // If you want to strictly block disallowed origins, use:
-      // callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
@@ -126,7 +125,7 @@ app.post('/api/snippets', async (req, res) => {
     const encryptedData = encrypt(message);
     const snippet = new Snippet({ title, encryptedData, password: hashedPassword, tags });
     const savedSnippet = await snippet.save(); // Ensure save is awaited
-
+    
     res.status(201).json({ success: true, encryptedData, title, id: savedSnippet._id });
   } catch (err) {
     console.error('Error in /api/snippets:', err.message, err.stack);
@@ -140,35 +139,33 @@ app.post('/api/snippets', async (req, res) => {
 // POST /api/decrypt
 app.post('/api/decrypt', async (req, res) => {
   const { id, password } = req.body;
-  console.log('Received request to /api/decrypt:', { id, password });
-
   try {
-    const snippet = await Snippet.findById(id);
+    const snippet = await Snippet.findOne({ snippetId: id }); // Query by snippetId
     if (!snippet) {
       return res.status(404).json({ success: false, error: 'Snippet not found' });
     }
-
     const isMatch = await bcrypt.compare(password, snippet.password);
     if (!isMatch) {
       return res.status(400).json({ success: false, error: 'Invalid password' });
     }
-
     const decrypted = decrypt(snippet.encryptedData);
     res.json({ success: true, message: decrypted });
   } catch (err) {
-    console.error('Error in /api/decrypt:', err.message, err.stack);
     res.status(400).json({ success: false, error: 'Decryption failed: ' + err.message });
   }
 });
 
 // GET /api/snippets
-app.get('/api/snippets', async (req, res) => {
+app.get('/api/snippets/:id', async (req, res) => {
   try {
-    const snippets = await Snippet.find();
-    res.status(200).json(snippets);
+    const { id } = req.params;
+    const snippet = await Snippet.findOne({ snippetId: id }); // Query by snippetId
+    if (!snippet) {
+      return res.status(404).json({ message: 'Snippet not found' });
+    }
+    res.status(200).json({ encryptedData: snippet.encryptedData, title: snippet.title, createdAt: snippet.createdAt });
   } catch (err) {
-    console.error('Error fetching snippets:', err.message, err.stack);
-    res.status(500).json({ success: false, error: 'Failed to fetch snippets: ' + err.message });
+    res.status(500).json({ message: 'Failed to fetch snippet: ' + err.message });
   }
 });
 
@@ -176,13 +173,12 @@ app.get('/api/snippets', async (req, res) => {
 app.delete('/api/snippets/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const deletedSnippet = await Snippet.findByIdAndDelete(id);
+    const deletedSnippet = await Snippet.findOneAndDelete({ snippetId: id }); // Query by snippetId
     if (!deletedSnippet) {
       return res.status(404).json({ message: 'Snippet not found' });
     }
     res.status(200).json({ success: true, message: 'Snippet deleted successfully' });
   } catch (err) {
-    console.error('Error deleting snippet:', err.message, err.stack);
     res.status(500).json({ message: 'Failed to delete snippet: ' + err.message });
   }
 });
