@@ -14,20 +14,21 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log('CORS blocked for origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: 'https://secure-snip.vercel.app', // Directly specify the frontend origin
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
+
+app.options('/api/snippets', (req, res) => {
+  res.header('Access-Control-Allow-Origin', 'https://secure-snip.vercel.app');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(204);
+});
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/secure-snip';
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || '12345678901234567890123456789012';
@@ -90,6 +91,7 @@ const decrypt = (encryptedText) => {
     throw err;
   }
 };
+
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
